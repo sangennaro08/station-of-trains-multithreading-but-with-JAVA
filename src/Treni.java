@@ -1,5 +1,6 @@
 import java.util.*;
 
+//CLASSE TRENO CHE è L'EFFETTIVO THREAD.
 public class Treni extends Thread {
 
     int ID;
@@ -8,6 +9,7 @@ public class Treni extends Thread {
     int tempo_di_arrivo;
     int tempo_giro_largo = 0;
     boolean scarica = false;
+    boolean entrata_di_priorita = false;
 
     double priorita;
     int starving = 0;
@@ -26,6 +28,7 @@ public class Treni extends Thread {
         this.priorita = (double) this.vagoni * this.tempo_di_arrivo;
     }
 
+    //ZONA IN CUI IL TRENO SIMULA IL SUO STATO,LE FUNZIONI SONO ALL'INTERNO DELLA CLASSE STAZIONE.
     @Override
     public void run()
     {
