@@ -12,14 +12,13 @@ public class StazioneTreni {
 
     private final Object lockScrittura = new Object();
     private final Object lockPriorita = new Object();
-    //private final Object returned_id_mutex = new Object();
 
-    private final ReentrantLock continue_to_station = new ReentrantLock();
     private final ReentrantLock rilascia_corretto_returned_id = new ReentrantLock();
 
     Condition possible_continue = rilascia_corretto_returned_id.newCondition();
     Condition controllo_priorita = rilascia_corretto_returned_id.newCondition();
 
+    private int returned_id=-1;
     private int controlloTreniInStazione = 0;
     private int treniCompletati = 0;
 
@@ -56,12 +55,12 @@ public class StazioneTreni {
             {
                 find_first_candidate(t);
 
-                if(Variabili_globali.returned_id !=-1)
+                if(this.returned_id !=-1)
                 {
 
                     rilascia_corretto_returned_id.lock();
                     try {
-                        if(Variabili_globali.returned_id != -1)
+                        if(this.returned_id != -1)
                         {
                             try
                             {
@@ -120,26 +119,28 @@ public class StazioneTreni {
     }
 
     public void find_first_candidate(Treni t) {
-        try {
-            for (Map.Entry<Integer, Treni> treno : treniInStazione.entrySet()) {
-                if ((treno.getValue().priorita < t.priorita && !treno.getValue().scarica) ||
-                    (treno.getValue().starving < t.starving && !treno.getValue().scarica)) {
 
+        for (Map.Entry<Integer, Treni> entry : treniInStazione.entrySet()) {
+            Treni candidato = entry.getValue();
+            if (candidato == null) continue;  // Safety check
+            
+                if ((candidato.priorita < t.priorita && !candidato.scarica) ||
+                    (candidato.starving < t.starving && !candidato.scarica)) {
+                    
                     rilascia_corretto_returned_id.lock();
-
-                        Variabili_globali.returned_id = treno.getKey();
+                    try {
+                        this.returned_id = entry.getKey();  // entry.getKey() è sempre valido
                         controllo_priorita.signalAll();
-
-                    rilascia_corretto_returned_id.unlock();    
-
+                    } finally {
+                        rilascia_corretto_returned_id.unlock();
+                    }
+                    
                     synchronized (lockScrittura) {
                         System.out.println("il treno con ID " + t.ID +
-                            " HA PRIORITÀ ELEVATA quindi fa spostare il treno con ID " + treno.getKey() + "\n\n");
+                            " HA PRIORITÀ ELEVATA quindi fa spostare il treno con ID " + entry.getKey() + "\n\n");
                     }
-                    break;
+                    return;
                 }
-            }
-        } finally {
         }
     }
 
@@ -149,7 +150,7 @@ public class StazioneTreni {
     try {
         boolean selezionato = controllo_priorita.await(6, TimeUnit.SECONDS);
 
-        if (selezionato && Variabili_globali.returned_id == t.ID) {
+        if (selezionato && this.returned_id == t.ID) {
 
             synchronized (lockScrittura) {
                 System.out.println("il treno con ID " + t.ID +
@@ -157,7 +158,7 @@ public class StazioneTreni {
             }
 
                 t.starving++;
-                Variabili_globali.returned_id = -1;
+                this.returned_id = -1;
 
                 treniInStazione.remove(t.ID);
                 binari.release();

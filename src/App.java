@@ -1,8 +1,10 @@
 public class App {
     public static void main(String[] args) {
 
-        StazioneTreni stazione = new StazioneTreni();
+        Controllo_var_globali.controll();
 
+        StazioneTreni stazione = new StazioneTreni();
+        
         stazione.creaTreni();
         stazione.inizializzaTreni();
 
