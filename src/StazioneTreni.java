@@ -58,8 +58,10 @@ public class StazioneTreni {
     public boolean possibileEntrataInStazione(Treni t) {
 
         synchronized (LOCKPRIORITA) {
-            if((Variabili_globali.PRIORITY_THRESHOLD < t.priorita && controlloTreniInStazione== Variabili_globali.BINARI_DISP) ||
-            (Variabili_globali.LIMIT_OF_STARVATION < t.starving && controlloTreniInStazione== Variabili_globali.BINARI_DISP))
+            //if((Variabili_globali.PRIORITY_THRESHOLD < t.priorita && controlloTreniInStazione== Variabili_globali.BINARI_DISP) ||
+            //(Variabili_globali.LIMIT_OF_STARVATION < t.starving && controlloTreniInStazione== Variabili_globali.BINARI_DISP))
+            if((t.priorita > Variabili_globali.PRIORITY_THRESHOLD || t.starving > Variabili_globali.LIMIT_OF_STARVATION) &&
+                (controlloTreniInStazione == Variabili_globali.BINARI_DISP))
             {
                 find_first_candidate(t);
 
@@ -108,14 +110,17 @@ public class StazioneTreni {
         return true;
     }
 
+    //------TROVA IL PRIMO CANDIDATO ACCETTABILE DA CACCIARE----------//
     public void find_first_candidate(Treni t) {
 
         for (Map.Entry<Integer, Treni> entry : TRENI_IN_STAZIONE.entrySet()) {
             Treni candidato = entry.getValue();
             if (candidato == null) continue;  // Safety check
             
-                if ((candidato.priorita < t.priorita && !candidato.scarica && !candidato.entrata_di_priorita) ||
-                    (candidato.starving < t.starving && !candidato.scarica && !candidato.entrata_di_priorita)) {
+                //if ((candidato.priorita < t.priorita && !candidato.scarica && !candidato.entrata_di_priorita) ||
+                //    (candidato.starving < t.starving && !candidato.scarica && !candidato.entrata_di_priorita)) 
+                if((candidato.priorita < t.priorita || candidato.starving < t.starving) && (!candidato.scarica && !candidato.entrata_di_priorita))
+                {
                     
                     RILASCIA_CORRETTO_RETURNED_ID.lock();
                     try {
@@ -134,6 +139,7 @@ public class StazioneTreni {
         }
     }
 
+    //------IL TRENO IN STAZIONE CONTROLLA SE è LUI QUELLO CACCIATO O MENO-----------------//
     public boolean controll_priorities(Treni t) {
 
     RILASCIA_CORRETTO_RETURNED_ID.lock();
@@ -166,6 +172,7 @@ public class StazioneTreni {
     }
 }
 
+    //SIMULAZIONE DELLO SCARICO MERCI DEL TRENO
     public void inizioScaricoMerci(Treni t) {
 
         synchronized (LOCKPRIORITA) {
